@@ -1,89 +1,119 @@
 import tornado.ioloop
 import tornado.web
 import json
+from Database import DataBase
+
 
 def print_elem(elem):
     return str(elem)
 
+
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.clear()
-        self.set_status(400)
-        self.finish("<html><body>Hello!</body></html>")
+        self.set_status(200)
+        response = {'status': 'ok'}
+        self.finish(response)
 
-elements = {}
 
-class ShowAllHandler(tornado.web.RequestHandler):
+db = DataBase()
+
+
+class Items(tornado.web.RequestHandler):
     def get(self):
-        ans = ''
-        for elem in elements:
-            ans = ans + print_elem(elements[elem]) + '\n'
-        self.write(ans)
+        self.write({'items': db.get_items(), 'status': 'ok'})
 
-class CreateHandler(tornado.web.RequestHandler):
+
+class Item(tornado.web.RequestHandler):
     def post(self):
         body = json.loads(self.request.body)
         if (not body.get('id') or not body.get('name') or not body.get('category')):
             self.clear()
             self.set_status(400)
-            self.finish("<html><body>Wrong arguments</body></html>")
-        elif elements.get(body['id']):
-            self.clear()
-            self.set_status(400)
-            self.finish("<html><body>There is already element with this id. Try to use update method.</body></html>")
+            response = {'status': 'error', 'details' : 'Wrong arguments'}
+            self.finish(response)
         else:
-            self.set_status(200)
-            elements[body['id']] = body
+            try:
+                db.insert(body)
+                self.clear()
+                self.set_status(200)
+                response = {'status': 'ok'}
+                self.finish(response)
+            except Exception as e:
+                self.clear()
+                self.set_status(400)
+                response = {'status': 'error', 'details': 'Error while creating element: {}'.format(e)}
+                self.finish(response)
 
-class DeleteHandler(tornado.web.RequestHandler):
-    def post(self):
+    def delete(self):
         body = json.loads(self.request.body)
         if (not body.get('id')):
             self.clear()
             self.set_status(400)
-            self.finish("<html><body>Wrong arguments</body></html>")
+            response = {'status': 'error', 'details': 'Wrong arguments'}
+            self.finish(response)
+            return
+
         id = body['id']
-        if (not elements.get(id)):
+        try:
+            db.delete(id)
+            self.clear()
+            self.set_status(200)
+            response = {'status': 'ok'}
+            self.finish(response)
+        except Exception as e:
             self.clear()
             self.set_status(400)
-            self.finish("<html><body>No element with this id.</body></html>")
-        elements.pop(id)
+            response = {'status': 'error', 'details': '{}'.format(e)}
+            self.finish(response)
 
-class ShowOneHandler(tornado.web.RequestHandler):
     def get(self):
         body = json.loads(self.request.body)
         if (not body.get('id')):
             self.clear()
             self.set_status(400)
-            self.finish("<html><body>Wrong arguments</body></html>")
+            response = {'status': 'error', 'details': 'Wrong arguments'}
+            self.finish(response)
+            return
         id = body['id']
-        if (not elements.get(id)):
+        try:
+            res = db.find(id)
+            self.set_status(200)
+            response = {'status': 'ok', 'items:': res}
+            self.finish(response)
+            return
+        except Exception as e:
             self.clear()
             self.set_status(400)
-            self.finish("<html><body>No element with this id.</body></html>")
-        self.set_status(200)
-        self.write(print_elem(elements[id]) + '\n')
+            response = {'status': 'error', 'details': '{}'.format(e)}
+            self.finish(response)
 
-class UpdateHandler(tornado.web.RequestHandler):
-    def post(self):
+    def put(self):
         body = json.loads(self.request.body)
-        if (not body.get('id')):
+        if not body.get('id'):
             self.clear()
             self.set_status(400)
-            self.finish("<html><body>Wrong arguments</body></html>")
-        id = body['id']
-        if (body.get('name')):
-            elements[id]['name'] = body['name']
-        if (body.get('category')):
-            elements[id]['category'] = body['category']
+            response = {'status': 'error', 'details': 'Wrong arguments'}
+            self.finish(response)
+            return
+        id = body.pop('id')
+        try:
+            db.update(id, body)
+            self.set_status(200)
+            response = {'status': 'ok'}
+            self.finish(response)
+            return
+        except Exception as e:
+            self.clear()
+            self.set_status(400)
+            response = {'status': 'error', 'details': '{}'.format(e)}
+            self.finish(response)
+
 
 def make_app():
     return tornado.web.Application([
-        (r"/create", CreateHandler),
-        (r"/showall", ShowAllHandler),
-        (r"/delete", DeleteHandler),
-        (r"/showone", ShowOneHandler),
-        (r"/update", UpdateHandler),
+        (r"/item", Item),
+        (r"/items", Items),
         (r"/", MainHandler),
 
     ])

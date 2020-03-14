@@ -9,5 +9,6 @@ RUN apt-get update \
 
 ADD server.py /server/
 
+ADD Database.py /server/
 
 WORKDIR /server/
