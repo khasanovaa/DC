@@ -1,14 +1,21 @@
 FROM python:latest
 
-ADD requirements.txt /app/
+ADD shop/requirements.txt /app/
 RUN apt-get update \
     && apt-get clean \
     && apt-get update -qqq \
     && pip install --upgrade pip \ 
     && pip install -r /app/requirements.txt
 
-ADD server.py /server/
+ADD shop/server.py /shop/
 
-ADD Database.py /server/
+ADD shop/Database.py /shop/
 
-WORKDIR /server/
+ADD shop/config.py /shop/
+
+ADD auth/authconfig.py /shop/
+
+
+#WORKDIR /shop/
+
+

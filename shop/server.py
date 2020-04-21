@@ -2,10 +2,17 @@ import tornado.ioloop
 import tornado.web
 import json
 from Database import DataBase
+import requests
+from config import SERVER_PORT
+from authconfig import AUTH_HOST, AUTH_PORT
+db = DataBase()
 
-
-def print_elem(elem):
-    return str(elem)
+def validate(access_token):
+    body = body = json.dumps({'access_token': access_token})
+    response = requests.post('http://{}:{}/validate'.format(AUTH_HOST, AUTH_PORT), data= body)
+    response_data = response.json()
+    if response_data['status'] != 'ok':
+        raise Exception('User is not authorized. Invalid access token.')
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -16,12 +23,9 @@ class MainHandler(tornado.web.RequestHandler):
         self.finish(response)
 
 
-db = DataBase()
-
-
 class Items(tornado.web.RequestHandler):
     def get(self):
-        self.write({'items': db.get_items(), 'status': 'ok'})
+        self.write({'status': 'ok', 'items': db.get_items()})
 
 
 class Item(tornado.web.RequestHandler):
@@ -32,8 +36,11 @@ class Item(tornado.web.RequestHandler):
             self.set_status(400)
             response = {'status': 'error', 'details' : 'Wrong arguments'}
             self.finish(response)
+            return
         else:
             try:
+                access_token = self.request.headers["Authorization"]
+                validate(access_token)
                 db.insert(body)
                 self.clear()
                 self.set_status(200)
@@ -56,6 +63,8 @@ class Item(tornado.web.RequestHandler):
 
         id = body['id']
         try:
+            access_token = self.request.headers["Authorization"]
+            validate(access_token)
             db.delete(id)
             self.clear()
             self.set_status(200)
@@ -81,7 +90,6 @@ class Item(tornado.web.RequestHandler):
             self.set_status(200)
             response = {'status': 'ok', 'items:': res}
             self.finish(response)
-            return
         except Exception as e:
             self.clear()
             self.set_status(400)
@@ -98,11 +106,12 @@ class Item(tornado.web.RequestHandler):
             return
         id = body.pop('id')
         try:
+            access_token = self.request.headers['Authorization']
+            validate(access_token)
             db.update(id, body)
             self.set_status(200)
             response = {'status': 'ok'}
             self.finish(response)
-            return
         except Exception as e:
             self.clear()
             self.set_status(400)
@@ -115,10 +124,10 @@ def make_app():
         (r"/item", Item),
         (r"/items", Items),
         (r"/", MainHandler),
-
     ])
+
 
 if __name__ == "__main__":
     app = make_app()
-    app.listen(8888)
+    app.listen(SERVER_PORT)
     tornado.ioloop.IOLoop.current().start()
