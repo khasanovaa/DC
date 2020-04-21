@@ -53,15 +53,7 @@ class Item(tornado.web.RequestHandler):
                 self.finish(response)
 
     def delete(self):
-        body = json.loads(self.request.body)
-        if (not body.get('id')):
-            self.clear()
-            self.set_status(400)
-            response = {'status': 'error', 'details': 'Wrong arguments'}
-            self.finish(response)
-            return
-
-        id = body['id']
+        id = self.get_query_argument("id")
         try:
             access_token = self.request.headers["Authorization"]
             validate(access_token)
@@ -77,14 +69,7 @@ class Item(tornado.web.RequestHandler):
             self.finish(response)
 
     def get(self):
-        body = json.loads(self.request.body)
-        if (not body.get('id')):
-            self.clear()
-            self.set_status(400)
-            response = {'status': 'error', 'details': 'Wrong arguments'}
-            self.finish(response)
-            return
-        id = body['id']
+        id = self.get_query_argument("id")
         try:
             res = db.find(id)
             self.set_status(200)
@@ -98,13 +83,7 @@ class Item(tornado.web.RequestHandler):
 
     def put(self):
         body = json.loads(self.request.body)
-        if not body.get('id'):
-            self.clear()
-            self.set_status(400)
-            response = {'status': 'error', 'details': 'Wrong arguments'}
-            self.finish(response)
-            return
-        id = body.pop('id')
+        id = self.get_query_argument("id")
         try:
             access_token = self.request.headers['Authorization']
             validate(access_token)
@@ -121,9 +100,9 @@ class Item(tornado.web.RequestHandler):
 
 def make_app():
     return tornado.web.Application([
-        (r"/item", Item),
         (r"/items", Items),
-        (r"/", MainHandler),
+        (r"/item", Item),
+        # (r"/", MainHandler),
     ])
 
 
