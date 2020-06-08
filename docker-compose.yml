@@ -21,8 +21,25 @@ services:
     ports:
       - 8080:8080
 
-
   mongo:
     image: mongo
     ports:
       - "27017:27017"
+
+  rabbitmq:
+    image: rabbitmq:3.6.6-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=user
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+
+  rabbitreader:
+    build: notifications/
+    command: python ./reader.py
+    ports:
+      - 9999:9999
+    depends_on:
+      - rabbitmq

@@ -1,4 +1,4 @@
-AUTH_HOST = 'localhost'
+AUTH_HOST = 'auth'
 AUTH_PORT = 8080
 MONGO_HOST= "mongo"
 MONGO_PORT = 27017

@@ -5,15 +5,17 @@ from Database import DataBase
 import requests
 from config import SERVER_PORT
 from authconfig import AUTH_HOST, AUTH_PORT
+
 db = DataBase()
 
 def validate(access_token):
     body = body = json.dumps({'access_token': access_token})
-    response = requests.post('http://{}:{}/validate'.format(AUTH_HOST, AUTH_PORT), data= body)
+    response = requests.post('http://{}:{}/validate'.format(AUTH_HOST, AUTH_PORT), data=body)
+    # response = requests.post('http://localhost:8080/validate', data=body)
     response_data = response.json()
     if response_data['status'] != 'ok':
         raise Exception('User is not authorized. Invalid access token.')
-
+    return True
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
@@ -31,7 +33,7 @@ class Items(tornado.web.RequestHandler):
 class Item(tornado.web.RequestHandler):
     def post(self):
         body = json.loads(self.request.body)
-        if (not body.get('id') or not body.get('name') or not body.get('category')):
+        if (not body.get('name') or not body.get('category')):
             self.clear()
             self.set_status(400)
             response = {'status': 'error', 'details' : 'Wrong arguments'}

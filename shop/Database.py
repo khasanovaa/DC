@@ -1,16 +1,24 @@
 from pymongo import MongoClient
 from config import MONGO_HOST, MONGO_PORT
+def idgen():
+    id = -1
+    with open('shop/idgen.txt') as idgen:
+        id = int(idgen.read())
+    with open('shop/idgen.txt', "w") as idgenw:
+        idgenw.write(str(id + 1))
+        idgenw.close()
+    return id
+
 
 class DataBase:
     def __init__(self):
         self.client = MongoClient(MONGO_HOST, MONGO_PORT)
+        # self.client = MongoClient('mongodb://localhost:27017/')
         self.db = self.client.db
         self.table = self.db.items
 
     def insert(self, doc):
-        id = doc['id']
-        if (self.exists(id)):
-            raise Exception('Item with id {} is ALREADY EXISTS'.format(id))
+        doc["id"] = str(idgen())
         self.table.insert_one(doc)
 
     def delete(self, id):
